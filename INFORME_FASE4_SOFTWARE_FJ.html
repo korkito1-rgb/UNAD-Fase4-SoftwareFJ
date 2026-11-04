@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Informe Fase 4 - Componente Práctico - Software FJ</title>
+<style>
+    @page {
+        size: letter;
+        margin: 2.54cm;
+    }
+    body {
+        font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+        line-height: 1.6;
+        color: #222;
+        background-color: #fff;
+        margin: 0 auto;
+        max-width: 900px;
+        padding: 20px;
+    }
+    .portada {
+        page-break-after: always;
+        text-align: center;
+        padding-top: 80px;
+        min-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .portada h1 {
+        font-size: 22pt;
+        color: #0b3954;
+        margin-bottom: 25px;
+        text-transform: uppercase;
+        border-bottom: 3px solid #f39200;
+        padding-bottom: 15px;
+    }
+    .portada h2 {
+        font-size: 15pt;
+        color: #444;
+        font-weight: 500;
+        margin-bottom: 40px;
+    }
+    .portada .datos-estudiante {
+        margin: 40px 0;
+        font-size: 12pt;
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 5px solid #0b3954;
+        display: inline-block;
+        text-align: left;
+    }
+    .portada .pie-portada {
+        font-size: 11pt;
+        color: #555;
+        margin-top: 60px;
+        line-height: 1.8;
+    }
+    h2 {
+        color: #0b3954;
+        border-bottom: 2px solid #eaeaea;
+        padding-bottom: 6px;
+        margin-top: 30px;
+        font-size: 15pt;
+    }
+    h3 {
+        color: #c0392b;
+        font-size: 12pt;
+        margin-top: 20px;
+    }
+    p, li {
+        font-size: 10.5pt;
+        text-align: justify;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        font-size: 9.5pt;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px 10px;
+        text-align: left;
+    }
+    th {
+        background-color: #0b3954;
+        color: #fff;
+    }
+    tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    pre, code {
+        font-family: 'Consolas', 'Courier New', monospace;
+    }
+    pre {
+        background-color: #1e1e1e;
+        color: #dcdcdc;
+        padding: 14px;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-size: 8.5pt;
+        line-height: 1.4;
+    }
+    .box-info {
+        background-color: #e8f4f8;
+        border-left: 4px solid #2980b9;
+        padding: 12px 16px;
+        margin: 15px 0;
+        border-radius: 4px;
+        font-size: 10pt;
+    }
+    .badge-ok {
+        background-color: #27ae60;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-weight: bold;
+        font-size: 8pt;
+    }
+    .badge-err {
+        background-color: #e67e22;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-weight: bold;
+        font-size: 8pt;
+    }
+</style>
+</head>
+<body>
+
+<div class="portada">
+    <div>
+        <h1>Universidad Nacional Abierta y a Distancia (UNAD)</h1>
+        <h2>Escuela de Ciencias Básicas, Tecnología e Ingeniería (ECBTI)<br>Programa de Ingeniería de Sistemas</h2>
+        <br><br>
+        <h1 style="border: none; font-size: 18pt; color: #2c3e50;">
+            Fase 4: Componente Práctico (Prácticas Simuladas)<br>
+            <span style="font-size: 14pt; color: #7f8c8d; font-weight: normal;">Sistema Integral de Gestión de Clientes, Servicios y Reservas - Software FJ</span>
+        </h1>
+    </div>
+
+    <div class="datos-estudiante">
+        <strong>Curso:</strong> Programación (Código 213023)<br>
+        <strong>Estudiante Desarrollador:</strong> Marco Steven Rodríguez Montoya<br>
+        <strong>Actividad:</strong> Componente Práctico - Prácticas Simuladas (150 Puntos)
+    </div>
+
+    <div class="pie-portada">
+        Colombia<br>
+        Noviembre de 2026
+    </div>
+</div>
+
+<h2>1. Introducción</h2>
+<p>
+El desarrollo moderno de sistemas de información exige que las soluciones tecnológicas no solo alcancen un funcionamiento óptimo bajo condiciones normales, sino que demuestren una elevada <strong>resiliencia, estabilidad y tolerancia a fallos</strong> ante entradas anómalas o estados no permitidos del negocio.
+</p>
+<p>
+El presente informe documenta la implementación completa de la solución orientada a objetos para la empresa <strong>Software FJ</strong>, cumpliendo estrictamente con el <em>Anexo 3</em> y la guía de evaluación de la Fase 4 del curso Programación (213023). La solución modela tres líneas especializadas de servicios (salas de conferencias, alquiler de hardware y asesorías especializadas) sin el uso de bases de datos, manteniendo todo el estado en memoria mediante colecciones tipadas y utilizando archivos físicos únicamente para el registro persistente de auditoría y excepciones (<code>software_fj.log</code>).
+</p>
+
+<h2>2. Enlace del Repositorio en GitHub</h2>
+<div class="box-info">
+    <strong>Repositorio Público en GitHub:</strong><br>
+    <a href="https://github.com/marcorodriguez-unad/UNAD-Fase4-SoftwareFJ" target="_blank">https://github.com/marcorodriguez-unad/UNAD-Fase4-SoftwareFJ</a><br>
+    <em>(Incluye historial de 5 ramas temáticas funcionales, commits convencionales, Pull Requests y documentación completa).</em>
+</div>
+
+<h2>3. Arquitectura Orientada a Objetos y Manejo de Excepciones</h2>
+
+<h3>3.1. Abstracción, Encapsulación y Herencia</h3>
+<ul>
+    <li><strong>Clase Abstracta <code>EntidadBase</code>:</strong> Contrato base que obliga a la implementación de <code>obtener_identificador()</code> y gestiona la marca de tiempo de auditoría.</li>
+    <li><strong>Encapsulación Rigurosa en <code>Cliente</code>:</strong> Atributos privados (<code>__id_cliente</code>, <code>__nombre</code>, <code>__email</code>, <code>__telefono</code>) gobernados mediante <code>@property</code> y setters con validación defensiva estricta mediante expresiones regulares (RFC de correo y longitud numérica telefónica).</li>
+    <li><strong>Jerarquía Polimórfica de <code>Servicio</code>:</strong> Especializaciones en <code>ReservaSala</code>, <code>AlquilerEquipo</code> (con control de inventario físico y depósito en garantía) y <code>AsesoriaEspecializada</code> (con multiplicadores por seniority profesional).</li>
+    <li><strong>Sobrecarga Simulada:</strong> En <code>calcular_costo()</code> mediante parámetros predeterminados con tipado (duración, descuento, recargo pico, IVA).</li>
+</ul>
+
+<h3>3.2. Jerarquía de Excepciones Personalizadas</h3>
+<p>
+Se construyó una jerarquía robusta que hereda de <code>SoftwareFJException(Exception)</code>, compuesta por:
+</p>
+<ul>
+    <li><code>ClienteInvalidoException</code>: Errores de sintaxis en correo, teléfono o datos nulos.</li>
+    <li><code>ServicioNoDisponibleException</code>: Agotamiento de inventario físico en bodega o servicios inactivos.</li>
+    <li><code>ReservaInvalidaException</code>: Duraciones negativas o parámetros de tiempo inconsistentes.</li>
+    <li><code>OperacionNoPermitidaException</code>: Transiciones indebidas de la máquina de estados (ej. re-cancelación).</li>
+</ul>
+
+<h3>3.3. Patrones Transaccionales Implementados</h3>
+<ul>
+    <li><strong><code>try / except</code>:</strong> Intercepta excepciones de dominio y del sistema sin detener la aplicación.</li>
+    <li><strong><code>try / except / else</code>:</strong> La reserva se incorpora a las listas en memoria únicamente si el bloque de validación concluyó con éxito total.</li>
+    <li><strong><code>try / except / finally</code>:</strong> Garantiza el cierre de auditoría, registro de trazas y desacoplamiento de recursos (como la devolución de unidades al inventario) en cualquier contingencia.</li>
+    <li><strong>Encadenamiento con <code>raise ... from ...</code>:</strong> Eleva <code>ReservaInvalidaException</code> preservando la causa original (<code>ValueError</code> al parsear fechas o números corruptos) en el atributo <code>__cause__</code> hacia el log.</li>
+</ul>
+
+<h2>4. Evidencias de Ejecución: Suite de 10 Simulaciones</h2>
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Operación Evaluada</th>
+            <th>Tipo</th>
+            <th>Resultado / Diagnóstico</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>01</td>
+            <td>Registro correcto de Cliente</td>
+            <td>Válido</td>
+            <td>Cliente instanciado en memoria con validaciones @property aprobadas.</td>
+            <td><span class="badge-ok">EXITOSA</span></td>
+        </tr>
+        <tr>
+            <td>02</td>
+            <td>Reserva de Sala de Conferencias</td>
+            <td>Válido</td>
+            <td>Reserva confirmada. Liquidado con IVA: $422,450.00 COP.</td>
+            <td><span class="badge-ok">EXITOSA</span></td>
+        </tr>
+        <tr>
+            <td>03</td>
+            <td>Alquiler de Hardware con Depósito</td>
+            <td>Válido</td>
+            <td>Aprobado. Total: $1,392,500.00 COP. Stock descontado de 2 a 1 unidad.</td>
+            <td><span class="badge-ok">EXITOSA</span></td>
+        </tr>
+        <tr>
+            <td>04</td>
+            <td>Asesoría con Sobrecarga de Cálculo</td>
+            <td>Válido</td>
+            <td>Consultor Master con 10% desc. y 15% recargo pico. Total: $2,032,222.50 COP.</td>
+            <td><span class="badge-ok">EXITOSA</span></td>
+        </tr>
+        <tr>
+            <td>05</td>
+            <td>Cancelación Controlada de Reserva</td>
+            <td>Válido</td>
+            <td>Reserva RES-002 cancelada. Unidad física devuelta a stock (1 a 2 unidades).</td>
+            <td><span class="badge-ok">EXITOSA</span></td>
+        </tr>
+        <tr>
+            <td>06</td>
+            <td>Registro con Email Inválido</td>
+            <td>Inválido</td>
+            <td>ClienteInvalidoException interceptada preventivamente sin abortar.</td>
+            <td><span class="badge-err">CONTROLADA</span></td>
+        </tr>
+        <tr>
+            <td>07</td>
+            <td>Reserva con Duración Negativa (-4h)</td>
+            <td>Inválido</td>
+            <td>ReservaInvalidaException capturada. Transacción rechazada.</td>
+            <td><span class="badge-err">CONTROLADA</span></td>
+        </tr>
+        <tr>
+            <td>08</td>
+            <td>Alquiler sin Stock en Bodega (0 uds)</td>
+            <td>Inválido</td>
+            <td>ServicioNoDisponibleException capturada. El sistema sigue operativo.</td>
+            <td><span class="badge-err">CONTROLADA</span></td>
+        </tr>
+        <tr>
+            <td>09</td>
+            <td>Re-cancelación Anómala de Reserva</td>
+            <td>Inválido</td>
+            <td>OperacionNoPermitidaException interceptada ante transición ilegal.</td>
+            <td><span class="badge-err">CONTROLADA</span></td>
+        </tr>
+        <tr>
+            <td>10</td>
+            <td>Inyección de Datos Corruptos</td>
+            <td>Inválido</td>
+            <td>raise ReservaInvalidaException from err_fecha ejecutado y logueado con traceback.</td>
+            <td><span class="badge-err">CONTROLADA</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>4.1. Extracto del Log de Auditoría (software_fj.log)</h3>
+<pre>
+2026-11-04 18:09:40 | INFO     | [SoftwareFJ.Core.Sistema] | [OP-14] Transacción Reserva 'RES-STOCK-001' iniciada para Cliente: 'CLI-1001', Servicio: 'SRV-EQ-LAP99'.
+2026-11-04 18:09:40 | WARNING  | [SoftwareFJ.Core.Sistema] | Rechazo transaccional de reserva 'RES-STOCK-001': ServicioNoDisponibleException | Código: ERR_EQUIPO_SIN_STOCK | Mensaje: No hay unidades disponibles en inventario para el equipo 'Estación de Trabajo Móvil GPU'. Stock actual: 0.
+2026-11-04 18:09:40 | INFO     | [SoftwareFJ.Core.Sistema] | Cierre de Auditoría (Bloque FINALLY): Reserva 'RES-STOCK-001' -> Estado final: [FALLIDA_NEGOCIO (ERR_EQUIPO_SIN_STOCK)].
+2026-11-04 18:09:40 | INFO     | [SoftwareFJ.Core.Sistema] | [OP-16] Procesando datos externos para reserva 'RES-ENC-001' con validación de tipos encadenada.
+2026-11-04 18:09:40 | ERROR    | [SoftwareFJ.Core.Sistema] | Encadenamiento de excepción detectado en reserva 'RES-ENC-001': ReservaInvalidaException | Código: ERR_PARSEO_FECHA_ENCADENADA (Causa original: ValueError("time data 'FECHA-CORRUPTA-2026/99/99' does not match format '%Y-%m-%d %H:%M'"))
+Traceback (most recent call last):
+  File "software_fj/core/sistema.py", line 319, in procesar_reserva_datos_externos
+    fecha_obj = datetime.strptime(fecha_str.strip(), "%Y-%m-%d %H:%M")
+ValueError: time data 'FECHA-CORRUPTA-2026/99/99' does not match format '%Y-%m-%d %H:%M'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "software_fj/core/sistema.py", line 322, in procesar_reserva_datos_externos
+    raise ReservaInvalidaException(...)
+software_fj.exceptions.ReservaInvalidaException: [ERR_PARSEO_FECHA_ENCADENADA] Error de formato en fecha 'FECHA-CORRUPTA-2026/99/99'.
+2026-11-04 18:09:40 | INFO     | [SoftwareFJ] | === SUITE DE SIMULACIÓN COMPLETADA EXITOSAMENTE. SISTEMA 100% ESTABLE. ===
+</pre>
+
+<h2>5. Conclusiones</h2>
+<ol>
+    <li><strong>Estabilidad en Sistemas en Memoria:</strong> Se comprobó experimentalmente que el diseño modular orientado a objetos y la encapsulación defensiva permiten prescindir de bases de datos relacionales sin sacrificar consistencia transaccional.</li>
+    <li><strong>Aislamiento y Seguridad con try/except/else/finally:</strong> El patrón transaccional compuesto garantiza que únicamente las operaciones válidas impacten el estado del sistema, mientras que el bloque <code>finally</code> asegura la trazabilidad y la liberación de inventario en cualquier circunstancia.</li>
+    <li><strong>Trazabilidad Técnica Avanzada:</strong> El encadenamiento de excepciones con <code>raise ... from ...</code> y el subsistema de logging multicanal ofrecen un registro forense exhaustivo sin interrumpir la experiencia operativa del software.</li>
+</ol>
+
+<h2>6. Referencias Bibliográficas (Normas APA 7.ª Edición)</h2>
+<ul>
+    <li>Cuevas Álvarez, A. (2016). <em>Python 3: curso práctico</em> (1.ª ed.). RA-MA Editorial.</li>
+    <li>Fabrizio, R., Baka, B., & Phillips, D. (2019). <em>Getting Started with Python: Understand Key Data Structures and Use Python in Object-oriented Programming</em>. Packt Publishing.</li>
+    <li>Python Software Foundation. (2024). <em>Errors and Exceptions — Python 3.12 Documentation</em>. https://docs.python.org/3/tutorial/errors.html</li>
+    <li>Van Rossum, G., & Drake Jr, F. L. (2024). <em>El tutorial de Python</em>. Python Software Foundation.</li>
+    <li>Zambrano, J. P. (2025). <em>Introducción al uso de GitHub</em> [Objeto Virtual de Información - OVI]. Repositorio Institucional UNAD.</li>
+</ul>
+
+</body>
+</html>

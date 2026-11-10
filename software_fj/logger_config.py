@@ -1,89 +1,49 @@
-"""Módulo de configuración del subsistema de Logging para Software FJ.
-
-Configura de manera centralizada la captura de eventos, advertencias y
-excepciones tanto en consola como en un archivo persistente en disco (software_fj.log),
-garantizando la trazabilidad exigida por la actividad académica.
-
-Autor: Marco Steven Rodríguez Montoya
-Curso: Programación (213023) - UNAD
+"""Configuración del sistema de logging para Software FJ.
+Guarda los eventos en consola y en el archivo software_fj.log.
 """
 
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
+
+# Definimos la ruta del archivo de log en la carpeta principal
+RUTA_LOG = Path(__file__).resolve().parent.parent / "software_fj.log"
+
+# Formato sencillo con fecha, nivel de error, módulo y mensaje
+FORMATO = "%(asctime)s | %(levelname)-7s | [%(name)s] | %(message)s"
+FORMATO_FECHA = "%Y-%m-%d %H:%M:%S"
 
 
-# Ruta predeterminada para el archivo de logs en la raíz de la solución
-LOG_FILE_PATH = Path(__file__).resolve().parent.parent / "software_fj.log"
-
-# Formato estándar y detallado para cada entrada del registro
-LOG_FORMAT = "%(asctime)s | %(levelname)-8s | [%(name)s] | %(message)s"
-DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-
-
-def configurar_logger_principal(
-    archivo_log: Optional[Path] = None,
-    nivel_consola: int = logging.INFO,
-    nivel_archivo: int = logging.DEBUG
-) -> logging.Logger:
-    """Configura y retorna el logger raíz de la aplicación Software FJ.
-
-    Crea un handler para la consola (StreamHandler) y un handler para el
-    archivo físico (FileHandler) en disco, evitando la duplicación de handlers.
-
-    Args:
-        archivo_log: Ruta personalizada del archivo .log; por defecto usa software_fj.log.
-        nivel_consola: Nivel mínimo de eventos visibles por consola.
-        nivel_archivo: Nivel mínimo de eventos persistidos en disco.
-
-    Returns:
-        Instancia de logging.Logger configurada.
-    """
+def configurar_logger():
+    """Configura el logger general con salida a consola y al archivo de log."""
     logger = logging.getLogger("SoftwareFJ")
     logger.setLevel(logging.DEBUG)
 
-    # Evitar acumular handlers si la función se invoca múltiples veces
+    # Si ya tiene handlers configurados, no los agregamos de nuevo
     if logger.handlers:
         return logger
 
-    formateador = logging.Formatter(fmt=LOG_FORMAT, datefmt=DATE_FORMAT)
+    formateador = logging.Formatter(fmt=FORMATO, datefmt=FORMATO_FECHA)
 
-    # 1. Handler para salida por Consola
-    consola_handler = logging.StreamHandler(sys.stdout)
-    consola_handler.setLevel(nivel_consola)
-    consola_handler.setFormatter(formateador)
-    logger.addHandler(consola_handler)
+    # Salida por consola
+    handler_consola = logging.StreamHandler(sys.stdout)
+    handler_consola.setLevel(logging.INFO)
+    handler_consola.setFormatter(formateador)
+    logger.addHandler(handler_consola)
 
-    # 2. Handler para archivo persistente en disco con codificación UTF-8
-    destino_log = archivo_log or LOG_FILE_PATH
+    # Salida a archivo software_fj.log en UTF-8
     try:
-        # Asegurar que el directorio contenedor exista
-        destino_log.parent.mkdir(parents=True, exist_ok=True)
-        archivo_handler = logging.FileHandler(destino_log, mode="a", encoding="utf-8")
-        archivo_handler.setLevel(nivel_archivo)
-        archivo_handler.setFormatter(formateador)
-        logger.addHandler(archivo_handler)
-    except (OSError, IOError) as error_fs:
-        # En caso de fallo con el sistema de archivos, avisar por consola sin abortar
-        logger.warning(
-            "No fue posible inicializar el FileHandler en '%s': %s",
-            destino_log,
-            error_fs
-        )
+        handler_archivo = logging.FileHandler(RUTA_LOG, mode="a", encoding="utf-8")
+        handler_archivo.setLevel(logging.DEBUG)
+        handler_archivo.setFormatter(formateador)
+        logger.addHandler(handler_archivo)
+    except Exception as e:
+        print(f"Advertencia: No se pudo crear el archivo de log: {e}")
 
     return logger
 
 
-def obtener_logger(nombre_modulo: str) -> logging.Logger:
-    """Retorna un sub-logger con el espacio de nombres de la jerarquía SoftwareFJ.
-
-    Args:
-        nombre_modulo: Nombre del módulo o clase solicitante.
-
-    Returns:
-        logging.Logger: Instancia conectada al logger raíz de la aplicación.
-    """
-    # Garantizar que el logger raíz esté inicializado
-    configurar_logger_principal()
+def obtener_logger(nombre_modulo: str):
+    """Devuelve un logger para el módulo indicado."""
+    configurar_logger()
     return logging.getLogger(f"SoftwareFJ.{nombre_modulo}")

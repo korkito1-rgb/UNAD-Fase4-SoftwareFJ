@@ -1,39 +1,23 @@
-"""Módulo de definición de la entidad Reserva para Software FJ.
-
-Gestiona el ciclo de vida de una reserva (PENDIENTE, CONFIRMADA, CANCELADA),
-integrando un Cliente, un Servicio, parámetros de tiempo y cálculos de costos,
-e implementando reglas de validación y prevención de transiciones ilegales.
-
-Autor: Marco Steven Rodríguez Montoya
-Curso: Programación (213023) - UNAD
+"""Clase Reserva para Software FJ.
+Controla el ciclo de vida de la reserva y las transiciones entre estados.
 """
 
 from datetime import datetime
-from enum import Enum
-from typing import Optional
-
 from software_fj.models.base import EntidadBase
 from software_fj.models.cliente import Cliente
 from software_fj.models.servicios import Servicio, AlquilerEquipo
-from software_fj.exceptions import (
-    ReservaInvalidaException,
-    OperacionNoPermitidaException,
-)
+from software_fj.exceptions import ReservaInvalidaException, OperacionNoPermitidaException
 
 
-class EstadoReserva(str, Enum):
-    """Enumeración con los estados posibles del ciclo de vida de una reserva."""
+class EstadoReserva:
+    """Constantes para los estados posibles de una reserva."""
     PENDIENTE = "PENDIENTE"
     CONFIRMADA = "CONFIRMADA"
     CANCELADA = "CANCELADA"
 
 
 class Reserva(EntidadBase):
-    """Entidad que asocia un Cliente con un Servicio durante un intervalo de tiempo.
-
-    Aplica encapsulación rigurosa y reglas de transición de estado que impiden
-    confirmaciones indebidas o re-cancelaciones erróneas.
-    """
+    """Asocia un Cliente con un Servicio contratado por un periodo de tiempo."""
 
     def __init__(
         self,
@@ -45,81 +29,50 @@ class Reserva(EntidadBase):
         descuento: float = 0.0,
         recargo_pico: float = 0.0,
         con_iva: bool = True
-    ) -> None:
-        """Inicializa una nueva reserva con validaciones previas.
-
-        Args:
-            id_reserva: Código alfanumérico único de la reserva (ej. 'RES-2026-001').
-            cliente: Objeto Cliente registrado y válido.
-            servicio: Objeto Servicio solicitado.
-            fecha_inicio: Fecha y hora de programación de la reserva.
-            duracion: Cantidad de horas o días contratados (> 0).
-            descuento: Porcentaje de descuento aplicable.
-            recargo_pico: Recargo por horario de alta demanda.
-            con_iva: Si aplica cobro de IVA.
-
-        Raises:
-            ReservaInvalidaException: Si algún parámetro resulta inconsistente.
-        """
+    ):
         super().__init__()
 
+        # Validaciones de los objetos recibidos
         if not id_reserva or not isinstance(id_reserva, str):
-            raise ReservaInvalidaException(
-                "El identificador de la reserva no puede ser vacío.",
-                codigo_error="ERR_RESERVA_ID_VACIO"
-            )
+            raise ReservaInvalidaException("El ID de la reserva no puede estar vacío.")
 
         if not isinstance(cliente, Cliente):
-            raise ReservaInvalidaException(
-                f"El cliente debe ser una instancia válida de la clase Cliente (recibido: {type(cliente).__name__}).",
-                codigo_error="ERR_RESERVA_CLIENTE_INVALIDO"
-            )
+            raise ReservaInvalidaException("El cliente debe ser un objeto válido de tipo Cliente.")
 
         if not isinstance(servicio, Servicio):
-            raise ReservaInvalidaException(
-                f"El servicio debe ser una instancia válida de la jerarquía Servicio (recibido: {type(servicio).__name__}).",
-                codigo_error="ERR_RESERVA_SERVICIO_INVALIDO"
-            )
+            raise ReservaInvalidaException("El servicio debe ser un objeto derivado de Servicio.")
 
         if not isinstance(fecha_inicio, datetime):
-            raise ReservaInvalidaException(
-                "La fecha de inicio debe ser un objeto datetime válido.",
-                codigo_error="ERR_RESERVA_FECHA_INVALIDA"
-            )
+            raise ReservaInvalidaException("La fecha debe ser un objeto datetime válido.")
 
         if duracion <= 0:
             raise ReservaInvalidaException(
-                f"La duración de la reserva debe ser estrictamente positiva (recibido: {duracion}).",
-                codigo_error="ERR_RESERVA_DURACION_NEGATIVA",
-                detalles={"duracion": duracion}
+                f"La duración de la reserva debe ser mayor a 0 (se indicó: {duracion})."
             )
 
-        # Validación del propio servicio
+        # Validamos parámetros propios del servicio solicitado
         servicio.validar_parametros(duracion)
 
-        self.__id_reserva: str = id_reserva.strip()
-        self.__cliente: Cliente = cliente
-        self.__servicio: Servicio = servicio
-        self.__fecha_inicio: datetime = fecha_inicio
-        self.__duracion: float = float(duracion)
-        self.__descuento: float = float(descuento)
-        self.__recargo_pico: float = float(recargo_pico)
-        self.__con_iva: bool = con_iva
-        self.__estado: EstadoReserva = EstadoReserva.PENDIENTE
-        self.__motivo_cancelacion: Optional[str] = None
+        self.__id_reserva = id_reserva.strip()
+        self.__cliente = cliente
+        self.__servicio = servicio
+        self.__fecha_inicio = fecha_inicio
+        self.__duracion = float(duracion)
+        self.__descuento = float(descuento)
+        self.__recargo_pico = float(recargo_pico)
+        self.__con_iva = con_iva
+        self.__estado = EstadoReserva.PENDIENTE
+        self.__motivo_cancelacion = ""
 
-        # Liquidación del costo inicial
-        self.__costo_total: float = servicio.calcular_costo(
+        # Calculamos el costo con los parámetros dados
+        self.__costo_total = servicio.calcular_costo(
             duracion=self.__duracion,
             descuento=self.__descuento,
             recargo_pico=self.__recargo_pico,
             con_iva=self.__con_iva
         )
 
-    # -------------------------------------------------------------------------
-    # Propiedades
-    # -------------------------------------------------------------------------
-
+    # --- Propiedades de lectura ---
     @property
     def id_reserva(self) -> str:
         return self.__id_reserva
@@ -141,7 +94,7 @@ class Reserva(EntidadBase):
         return self.__duracion
 
     @property
-    def estado(self) -> EstadoReserva:
+    def estado(self) -> str:
         return self.__estado
 
     @property
@@ -149,62 +102,44 @@ class Reserva(EntidadBase):
         return self.__costo_total
 
     @property
-    def motivo_cancelacion(self) -> Optional[str]:
+    def motivo_cancelacion(self) -> str:
         return self.__motivo_cancelacion
 
     def obtener_identificador(self) -> str:
-        """Retorna el código de reserva."""
         return self.__id_reserva
 
-    # -------------------------------------------------------------------------
-    # Máquina de Estados y Reglas de Negocio
-    # -------------------------------------------------------------------------
+    # --- Acciones sobre el estado de la reserva ---
 
-    def confirmar(self) -> None:
-        """Confirma la reserva pasando de PENDIENTE a CONFIRMADA.
-
-        Raises:
-            OperacionNoPermitidaException: Si la reserva se encuentra cancelada.
-        """
+    def confirmar(self):
+        """Confirma la reserva. Si es alquiler de equipo, descuenta una unidad del stock."""
         if self.__estado == EstadoReserva.CANCELADA:
             raise OperacionNoPermitidaException(
-                f"No se puede confirmar la reserva '{self.__id_reserva}' porque ya se encuentra CANCELADA.",
-                codigo_error="ERR_CONFIRMAR_CANCELADA",
-                detalles={"id_reserva": self.__id_reserva, "estado_actual": self.__estado.value}
+                f"No se puede confirmar la reserva '{self.__id_reserva}' porque ya está CANCELADA."
             )
 
         if self.__estado == EstadoReserva.CONFIRMADA:
-            return  # Idempotente
+            return  # Ya estaba confirmada, no repetimos
 
-        # Si el servicio es de alquiler de hardware, descontamos del inventario físico
+        # Si el servicio es de hardware, descontamos del inventario
         if isinstance(self.__servicio, AlquilerEquipo):
             self.__servicio.descontar_unidad()
 
         self.__estado = EstadoReserva.CONFIRMADA
 
-    def cancelar(self, motivo: str = "Solicitud de cancelación estándar") -> None:
-        """Cancela la reserva y restituye inventario si corresponde.
-
-        Raises:
-            OperacionNoPermitidaException: Si la reserva ya fue cancelada con anterioridad.
-        """
+    def cancelar(self, motivo: str = "Cancelada por el cliente"):
+        """Cancela la reserva. Si era un equipo confirmado, devuelve la unidad al stock."""
         if self.__estado == EstadoReserva.CANCELADA:
             raise OperacionNoPermitidaException(
-                f"Operación no permitida: la reserva '{self.__id_reserva}' ya se encuentra CANCELADA.",
-                codigo_error="ERR_RESERVA_YA_CANCELADA",
-                detalles={"id_reserva": self.__id_reserva, "motivo_previo": self.__motivo_cancelacion}
+                f"La reserva '{self.__id_reserva}' ya se encuentra CANCELADA. No se puede cancelar de nuevo."
             )
 
-        # Si estaba confirmada y era un equipo, devolvemos la unidad a bodega
+        # Devolvemos el equipo al stock si estaba confirmada
         if self.__estado == EstadoReserva.CONFIRMADA and isinstance(self.__servicio, AlquilerEquipo):
             self.__servicio.reponer_unidad()
 
         self.__estado = EstadoReserva.CANCELADA
-        self.__motivo_cancelacion = motivo.strip()
+        self.__motivo_cancelacion = motivo
 
-    def __str__(self) -> str:
-        """Resumen visual de la reserva."""
-        return (f"Reserva[{self.__id_reserva} | Estado: {self.__estado.value} | "
-                f"Cliente: {self.__cliente.nombre} | Servicio: {self.__servicio.nombre} | "
-                f"Fecha: {self.__fecha_inicio.strftime('%Y-%m-%d %H:%M')} | "
-                f"Total: ${self.__costo_total:,.2f}]")
+    def __str__(self):
+        return (f"Reserva {self.__id_reserva} [{self.__estado}] - Cliente: {self.__cliente.nombre} | "
+                f"Servicio: {self.__servicio.nombre} | Total: ${self.__costo_total:,.2f} COP")

@@ -1,177 +1,89 @@
-"""Módulo de definición de la entidad Cliente para Software FJ.
-
-Implementa encapsulación rigurosa mediante atributos privados (__),
-decoradores @property y setters con validación defensiva estricta,
-lanzando ClienteInvalidoException ante cualquier dato anómalo.
-
-Autor: Marco Steven Rodríguez Montoya
-Curso: Programación (213023) - UNAD
+"""Clase Cliente con encapsulación estricta y validaciones defensivas.
+Usa atributos privados (__) y decoradores @property para proteger los datos.
 """
 
-import re
-from typing import Optional
 from software_fj.models.base import EntidadBase
 from software_fj.exceptions import ClienteInvalidoException
 
 
-# Expresión regular estándar para validar correos electrónicos con @ y dominio con TLD
-REGEX_EMAIL = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
-
-# Expresión regular para validar teléfonos (solo dígitos numéricos, longitud 7 a 15)
-REGEX_TELEFONO = re.compile(r"^\+?[0-9]{7,15}$")
-
-
 class Cliente(EntidadBase):
-    """Entidad que modela un cliente en el sistema Software FJ.
+    """Representa a un cliente dentro de Software FJ."""
 
-    Todos sus atributos son estrictamente privados (__id_cliente, __nombre,
-    __email, __telefono) y son manipulados exclusivamente mediante propiedades
-    con validaciones preventivas.
-    """
-
-    def __init__(
-        self,
-        id_cliente: str,
-        nombre: str,
-        email: str,
-        telefono: str
-    ) -> None:
-        """Inicializa un cliente invocando los setters validados.
-
-        Args:
-            id_cliente: Cédula o identificador fiscal único del cliente.
-            nombre: Nombre completo del cliente o razón social.
-            email: Correo electrónico válido (debe contener @ y dominio).
-            telefono: Número de contacto telefónico numérico (7 a 15 dígitos).
-
-        Raises:
-            ClienteInvalidoException: Si alguno de los valores suministrados es inválido.
-        """
+    def __init__(self, id_cliente: str, nombre: str, email: str, telefono: str):
         super().__init__()
-        # Inicialización de atributos privados
-        self.__id_cliente: str = ""
-        self.__nombre: str = ""
-        self.__email: str = ""
-        self.__telefono: str = ""
+        # Inicializamos variables privadas
+        self.__id_cliente = ""
+        self.__nombre = ""
+        self.__email = ""
+        self.__telefono = ""
 
-        # Asignación a través de las propiedades validadas
+        # Usamos los setters para que pasen por las validaciones
         self.id_cliente = id_cliente
         self.nombre = nombre
         self.email = email
         self.telefono = telefono
 
-    # -------------------------------------------------------------------------
-    # Propiedades y Setters con Validación Defensiva
-    # -------------------------------------------------------------------------
-
+    # --- Métodos getter y setter para id_cliente ---
     @property
     def id_cliente(self) -> str:
-        """Obtiene la identificación única del cliente."""
         return self.__id_cliente
 
     @id_cliente.setter
-    def id_cliente(self, valor: str) -> None:
-        """Valida y asigna el identificador del cliente."""
+    def id_cliente(self, valor: str):
         if not isinstance(valor, str) or not valor.strip():
-            raise ClienteInvalidoException(
-                "El identificador del cliente no puede ser vacío o nulo.",
-                codigo_error="ERR_CLIENTE_ID_VACIO",
-                detalles={"valor_recibido": valor}
-            )
+            raise ClienteInvalidoException("El ID del cliente no puede estar vacío.")
         self.__id_cliente = valor.strip()
 
+    # --- Métodos getter y setter para nombre ---
     @property
     def nombre(self) -> str:
-        """Obtiene el nombre completo del cliente."""
         return self.__nombre
 
     @nombre.setter
-    def nombre(self, valor: str) -> None:
-        """Valida y asigna el nombre del cliente."""
+    def nombre(self, valor: str):
         if not isinstance(valor, str) or len(valor.strip()) < 3:
-            raise ClienteInvalidoException(
-                "El nombre del cliente debe contener al menos 3 caracteres alfabéticos.",
-                codigo_error="ERR_CLIENTE_NOMBRE_CORTO",
-                detalles={"valor_recibido": valor}
-            )
+            raise ClienteInvalidoException("El nombre del cliente debe tener al menos 3 letras.")
         self.__nombre = valor.strip()
 
+    # --- Métodos getter y setter para email ---
     @property
     def email(self) -> str:
-        """Obtiene la dirección de correo electrónico del cliente."""
         return self.__email
 
     @email.setter
-    def email(self, valor: str) -> None:
-        """Valida defensivamente el formato del correo electrónico."""
+    def email(self, valor: str):
         if not isinstance(valor, str):
+            raise ClienteInvalidoException("El correo debe ser un texto.")
+
+        correo_limpio = valor.strip().lower()
+        # Validación defensiva del formato de correo: debe tener @ y punto
+        if "@" not in correo_limpio or "." not in correo_limpio.split("@")[-1]:
             raise ClienteInvalidoException(
-                "El correo electrónico debe ser una cadena de texto.",
-                codigo_error="ERR_CLIENTE_EMAIL_TIPO",
-                detalles={"tipo": type(valor).__name__}
+                f"El correo '{valor}' no es válido. Debe contener '@' y un dominio con punto."
             )
+        self.__email = correo_limpio
 
-        limpio = valor.strip()
-        if not limpio:
-            raise ClienteInvalidoException(
-                "El correo electrónico del cliente no puede estar vacío.",
-                codigo_error="ERR_CLIENTE_EMAIL_VACIO"
-            )
-
-        # Validación estructural estricta: arroba y dominio válido
-        if not REGEX_EMAIL.match(limpio):
-            raise ClienteInvalidoException(
-                f"El formato del correo electrónico '{limpio}' no es válido. Debe contener '@' y un dominio válido.",
-                codigo_error="ERR_CLIENTE_EMAIL_FORMATO",
-                detalles={"email_invalido": limpio}
-            )
-
-        self.__email = limpio.lower()
-
+    # --- Métodos getter y setter para telefono ---
     @property
     def telefono(self) -> str:
-        """Obtiene el número de teléfono del cliente."""
         return self.__telefono
 
     @telefono.setter
-    def telefono(self, valor: str) -> None:
-        """Valida defensivamente el número de contacto telefónico."""
+    def telefono(self, valor: str):
         if not isinstance(valor, str):
-            raise ClienteInvalidoException(
-                "El teléfono debe ser suministrado como cadena numérica.",
-                codigo_error="ERR_CLIENTE_TELEFONO_TIPO",
-                detalles={"tipo": type(valor).__name__}
-            )
+            raise ClienteInvalidoException("El teléfono debe ser un texto numérico.")
 
         limpio = valor.strip().replace(" ", "").replace("-", "")
-        if not limpio:
+        # Validamos que solo contenga dígitos y tenga entre 7 y 15 números
+        if not limpio.isdigit() or len(limpio) < 7 or len(limpio) > 15:
             raise ClienteInvalidoException(
-                "El teléfono del cliente no puede estar vacío.",
-                codigo_error="ERR_CLIENTE_TELEFONO_VACIO"
+                f"El teléfono '{valor}' es inválido. Debe tener entre 7 y 15 dígitos numéricos."
             )
-
-        if not REGEX_TELEFONO.match(limpio):
-            raise ClienteInvalidoException(
-                f"El número de teléfono '{valor}' no es válido. Debe contener entre 7 y 15 dígitos numéricos.",
-                codigo_error="ERR_CLIENTE_TELEFONO_FORMATO",
-                detalles={"telefono_invalido": valor}
-            )
-
         self.__telefono = limpio
 
-    # -------------------------------------------------------------------------
-    # Implementación de Métodos de la Clase Base
-    # -------------------------------------------------------------------------
-
     def obtener_identificador(self) -> str:
-        """Retorna el identificador único del cliente para indexación."""
+        """Cumple el contrato de la clase EntidadBase."""
         return self.__id_cliente
 
-    def __str__(self) -> str:
-        """Representación legible del cliente."""
-        return f"Cliente({self.__id_cliente} - {self.__nombre} | Email: {self.__email} | Tel: {self.__telefono})"
-
-    def __repr__(self) -> str:
-        """Representación formal del objeto Cliente."""
-        return (f"Cliente(id_cliente='{self.__id_cliente}', nombre='{self.__nombre}', "
-                f"email='{self.__email}', telefono='{self.__telefono}')")
+    def __str__(self):
+        return f"Cliente: {self.__nombre} (ID: {self.__id_cliente}, Email: {self.__email}, Tel: {self.__telefono})"

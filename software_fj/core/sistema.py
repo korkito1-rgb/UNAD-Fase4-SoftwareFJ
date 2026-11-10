@@ -1,24 +1,12 @@
-"""Módulo central del sistema de gestión para Software FJ.
-
-Implementa la clase controladora 'SistemaGestionFJ' que administra en memoria
-(mediante listas nativas, sin base de datos) los clientes, servicios y reservas.
-Aplica patrones estrictos de manejo de excepciones:
-- try / except
-- try / except / else
-- try / except / finally
-- Encadenamiento de excepciones (raise ... from ...)
-- Registro continuo y estructurado de eventos en software_fj.log
-
-Autor: Marco Steven Rodríguez Montoya
-Curso: Programación (213023) - UNAD
+"""Controlador central de Software FJ.
+Gestiona las listas en memoria de clientes, servicios y reservas sin base de datos,
+aplicando manejo avanzado de excepciones (try-except-else-finally y encadenamiento).
 """
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-
 from software_fj.logger_config import obtener_logger
 from software_fj.models.cliente import Cliente
-from software_fj.models.servicios import Servicio, AlquilerEquipo
+from software_fj.models.servicios import Servicio
 from software_fj.models.reserva import Reserva, EstadoReserva
 from software_fj.exceptions import (
     SoftwareFJException,
@@ -28,140 +16,79 @@ from software_fj.exceptions import (
     OperacionNoPermitidaException,
 )
 
-logger = obtener_logger("Core.Sistema")
+logger = obtener_logger("Sistema")
 
 
 class SistemaGestionFJ:
-    """Controlador central en memoria para el sistema Software FJ.
+    """Clase administradora principal del sistema. Todo se maneja en listas internas."""
 
-    No utiliza motores de bases de datos. Todo el estado reside en colecciones
-    internas tipadas con validación defensiva en cada operación transaccional.
-    """
+    def __init__(self, nombre_empresa: str = "Software FJ"):
+        self.nombre_empresa = nombre_empresa
+        # Colecciones en memoria exigidas por el Anexo 3 (sin base de datos)
+        self.clientes = []
+        self.servicios = []
+        self.reservas = []
 
-    def __init__(self, nombre_empresa: str = "Software FJ S.A.S.") -> None:
-        """Inicializa las listas internas en memoria y el registro de eventos.
-
-        Args:
-            nombre_empresa: Razón social del sistema.
-        """
-        self.__nombre_empresa: str = nombre_empresa
-        self.__clientes: List[Cliente] = []
-        self.__servicios: List[Servicio] = []
-        self.__reservas: List[Reserva] = []
-        self.__contador_operaciones: int = 0
-        self.__contador_excepciones_controladas: int = 0
-
-        logger.info(
-            "Sistema '%s' inicializado en memoria con listas internas. Base de datos: DESHABILITADA.",
-            self.__nombre_empresa
-        )
+        logger.info("Sistema %s iniciado en memoria. Listas internas listas.", self.nombre_empresa)
 
     # -------------------------------------------------------------------------
-    # Gestión de Clientes en Memoria
+    # Gestión de Clientes
     # -------------------------------------------------------------------------
 
-    def registrar_cliente(
-        self,
-        id_cliente: str,
-        nombre: str,
-        email: str,
-        telefono: str
-    ) -> Optional[Cliente]:
-        """Registra un nuevo cliente validando unicidad y datos defensivos.
-
-        Aplica bloque try / except para atrapar ClienteInvalidoException y
-        evitar que fallos en datos suministrados aborten el hilo principal.
-
-        Args:
-            id_cliente: Documento de identidad.
-            nombre: Nombre completo.
-            email: Correo con formato válido.
-            telefono: Número telefónico de 7 a 15 dígitos.
-
-        Returns:
-            Cliente si el registro fue exitoso; None si ocurrió un error controlado.
-        """
-        self.__contador_operaciones += 1
-        logger.info("[OP-%02d] Iniciando registro de cliente ID: %s", self.__contador_operaciones, id_cliente)
+    def registrar_cliente(self, id_cliente: str, nombre: str, email: str, telefono: str):
+        """Registra un cliente nuevo en la lista interna controlando excepciones."""
+        logger.info("Intentando registrar cliente con ID: %s", id_cliente)
 
         try:
-            # Verificar si ya existe en la lista interna
+            # Validamos si ya existe ese ID
             if self.buscar_cliente(id_cliente) is not None:
                 raise ClienteInvalidoException(
-                    f"Ya existe un cliente registrado con el identificador '{id_cliente}'.",
-                    codigo_error="ERR_CLIENTE_DUPLICADO",
-                    detalles={"id_cliente": id_cliente}
+                    f"Ya existe un cliente con la identificación '{id_cliente}'."
                 )
 
-            # Instanciación sujeta a validaciones en setters
-            nuevo_cliente = Cliente(
-                id_cliente=id_cliente,
-                nombre=nombre,
-                email=email,
-                telefono=telefono
-            )
-            self.__clientes.append(nuevo_cliente)
-            logger.info("Cliente registrado exitosamente en memoria: %s", nuevo_cliente)
+            # Creamos el objeto Cliente (sus setters aplican las validaciones)
+            nuevo_cliente = Cliente(id_cliente, nombre, email, telefono)
+            self.clientes.append(nuevo_cliente)
+            logger.info("Cliente registrado con éxito: %s", nuevo_cliente.nombre)
             return nuevo_cliente
 
-        except ClienteInvalidoException as cie:
-            self.__contador_excepciones_controladas += 1
-            logger.warning("Fallo controlado al registrar cliente: %s", cie.formatear_para_log())
+        except ClienteInvalidoException as e:
+            # Capturamos el error de validación sin tumbar el programa
+            logger.warning("No se pudo registrar el cliente [%s]: %s", id_cliente, e.mensaje)
             return None
-        except Exception as ex_inesperada:
-            self.__contador_excepciones_controladas += 1
-            logger.error(
-                "Excepción no esperada al procesar cliente ID '%s': %s",
-                id_cliente,
-                ex_inesperada,
-                exc_info=True
-            )
+        except Exception as e:
+            logger.error("Error inesperado al registrar cliente: %s", e, exc_info=True)
             return None
 
-    def buscar_cliente(self, id_cliente: str) -> Optional[Cliente]:
-        """Busca un cliente por su identificador en la lista interna."""
-        id_normalizado = str(id_cliente).strip()
-        for c in self.__clientes:
-            if c.id_cliente == id_normalizado:
+    def buscar_cliente(self, id_cliente: str):
+        """Busca un cliente por su ID en la lista interna."""
+        for c in self.clientes:
+            if c.id_cliente == id_cliente.strip():
                 return c
         return None
 
     # -------------------------------------------------------------------------
-    # Gestión de Servicios en Memoria
+    # Gestión de Servicios
     # -------------------------------------------------------------------------
 
-    def registrar_servicio(self, servicio: Servicio) -> bool:
-        """Agrega un servicio especializado al catálogo interno en memoria.
-
-        Args:
-            servicio: Instancia polimórfica de ReservaSala, AlquilerEquipo o AsesoriaEspecializada.
-
-        Returns:
-            bool: True si se registró correctamente.
-        """
-        self.__contador_operaciones += 1
-        try:
-            if not isinstance(servicio, Servicio):
-                raise TypeError(f"Se esperaba una subclase de Servicio, recibido: {type(servicio).__name__}")
-
-            if self.buscar_servicio(servicio.id_servicio) is not None:
-                logger.warning("El servicio con ID '%s' ya se encuentra registrado.", servicio.id_servicio)
-                return False
-
-            self.__servicios.append(servicio)
-            logger.info("Servicio catalogado exitosamente: %s", servicio.describir_servicio())
-            return True
-
-        except Exception as error_cat:
-            self.__contador_excepciones_controladas += 1
-            logger.error("Error al registrar servicio en catálogo: %s", error_cat, exc_info=True)
+    def registrar_servicio(self, servicio: Servicio):
+        """Agrega un servicio al catálogo en memoria."""
+        if not isinstance(servicio, Servicio):
+            logger.error("El objeto a registrar no es un Servicio válido.")
             return False
 
-    def buscar_servicio(self, id_servicio: str) -> Optional[Servicio]:
-        """Busca un servicio en la lista interna por su identificador único."""
-        id_normalizado = str(id_servicio).strip()
-        for s in self.__servicios:
-            if s.id_servicio == id_normalizado:
+        if self.buscar_servicio(servicio.id_servicio) is not None:
+            logger.warning("El servicio con ID '%s' ya existe.", servicio.id_servicio)
+            return False
+
+        self.servicios.append(servicio)
+        logger.info("Servicio registrado: %s", servicio.describir_servicio())
+        return True
+
+    def buscar_servicio(self, id_servicio: str):
+        """Busca un servicio en el catálogo por su ID."""
+        for s in self.servicios:
+            if s.id_servicio == id_servicio.strip():
                 return s
         return None
 
@@ -169,7 +96,7 @@ class SistemaGestionFJ:
     # Transacción de Reserva con try / except / else / finally
     # -------------------------------------------------------------------------
 
-    def crear_reserva_transaccional(
+    def crear_reserva(
         self,
         id_reserva: str,
         id_cliente: str,
@@ -179,58 +106,32 @@ class SistemaGestionFJ:
         descuento: float = 0.0,
         recargo_pico: float = 0.0,
         con_iva: bool = True
-    ) -> Optional[Reserva]:
-        """Crea una reserva aplicando rigurosamente el patrón try / except / else / finally.
-
-        - try: Realiza las comprobaciones de existencia, reglas de stock y construcción.
-        - except: Captura excepciones de negocio específicas y preserva el estado.
-        - else: Se ejecuta ÚNICAMENTE si no ocurrió ninguna excepción, persistiendo la reserva en memoria.
-        - finally: Se ejecuta SIEMPRE para auditar la transacción y liberar/cerrar trazas operativas.
-
-        Returns:
-            Reserva confirmada si no hubo errores; None en caso de excepciones.
-        """
-        self.__contador_operaciones += 1
-        reserva_creada: Optional[Reserva] = None
-        estado_transaccion: str = "INICIADA"
-
-        logger.info(
-            "[OP-%02d] Transacción Reserva '%s' iniciada para Cliente: '%s', Servicio: '%s'.",
-            self.__contador_operaciones, id_reserva, id_cliente, id_servicio
-        )
+    ):
+        """Crea una reserva aplicando el patrón completo try / except / else / finally."""
+        logger.info("Iniciando creación de reserva '%s'...", id_reserva)
+        reserva = None
+        estado_final = "INCOMPLETA"
 
         try:
-            # 1. Comprobación de unicidad de la reserva
-            if any(r.id_reserva == id_reserva for r in self.__reservas):
-                raise ReservaInvalidaException(
-                    f"El identificador de reserva '{id_reserva}' ya existe en el sistema.",
-                    codigo_error="ERR_RESERVA_DUPLICADA"
-                )
+            # 1. Comprobamos que el ID de reserva no esté repetido
+            if any(r.id_reserva == id_reserva for r in self.reservas):
+                raise ReservaInvalidaException(f"Ya existe una reserva con el ID '{id_reserva}'.")
 
-            # 2. Búsqueda de cliente
+            # 2. Verificamos que el cliente exista en la lista
             cliente = self.buscar_cliente(id_cliente)
             if cliente is None:
-                raise ClienteInvalidoException(
-                    f"No es posible crear la reserva: Cliente con ID '{id_cliente}' no está registrado.",
-                    codigo_error="ERR_CLIENTE_NO_ENCONTRADO"
-                )
+                raise ClienteInvalidoException(f"El cliente '{id_cliente}' no está registrado.")
 
-            # 3. Búsqueda de servicio
+            # 3. Verificamos que el servicio exista en el catálogo
             servicio = self.buscar_servicio(id_servicio)
             if servicio is None:
-                raise ServicioNoDisponibleException(
-                    f"No es posible crear la reserva: Servicio con ID '{id_servicio}' no existe en catálogo.",
-                    codigo_error="ERR_SERVICIO_INEXISTENTE"
-                )
+                raise ServicioNoDisponibleException(f"El servicio '{id_servicio}' no fue encontrado.")
 
             if not servicio.activo:
-                raise ServicioNoDisponibleException(
-                    f"El servicio '{servicio.nombre}' está temporalmente fuera de línea.",
-                    codigo_error="ERR_SERVICIO_INACTIVO"
-                )
+                raise ServicioNoDisponibleException(f"El servicio '{servicio.nombre}' está desactivado.")
 
-            # 4. Creación y validación defensiva en modelo
-            reserva_creada = Reserva(
+            # 4. Instanciamos la reserva (valida duración > 0 y stock si es equipo)
+            reserva = Reserva(
                 id_reserva=id_reserva,
                 cliente=cliente,
                 servicio=servicio,
@@ -241,53 +142,33 @@ class SistemaGestionFJ:
                 con_iva=con_iva
             )
 
-            # Confirmar reserva preliminarmente afectando inventario si es AlquilerEquipo
-            reserva_creada.confirmar()
+            # Confirmamos la reserva (si es equipo descuenta una unidad del stock)
+            reserva.confirmar()
 
         except (ClienteInvalidoException, ServicioNoDisponibleException,
-                ReservaInvalidaException, OperacionNoPermitidaException) as ex_negocio:
-            # Bloque EXCEPT: Gestión de excepciones conocidas del dominio
-            self.__contador_excepciones_controladas += 1
-            estado_transaccion = f"FALLIDA_NEGOCIO ({ex_negocio.codigo_error})"
-            logger.warning(
-                "Rechazo transaccional de reserva '%s': %s",
-                id_reserva,
-                ex_negocio.formatear_para_log()
-            )
-            reserva_creada = None
+                ReservaInvalidaException, OperacionNoPermitidaException) as err_negocio:
+            # Capturamos excepciones propias de negocio
+            estado_final = f"RECHAZADA ({err_negocio.codigo})"
+            logger.warning("Reserva '%s' rechazada por regla de negocio: %s", id_reserva, err_negocio)
+            reserva = None
 
-        except Exception as ex_general:
-            # Bloque EXCEPT: Captura de contingencias imprevistas
-            self.__contador_excepciones_controladas += 1
-            estado_transaccion = f"FALLIDA_CRITICA ({type(ex_general).__name__})"
-            logger.error(
-                "Error crítico inesperado en reserva '%s': %s",
-                id_reserva,
-                ex_general,
-                exc_info=True
-            )
-            reserva_creada = None
+        except Exception as err_inesperado:
+            # Captura de contingencias imprevistas
+            estado_final = "ERROR_SISTEMA"
+            logger.error("Error imprevisto en la reserva '%s': %s", id_reserva, err_inesperado, exc_info=True)
+            reserva = None
 
         else:
-            # Bloque ELSE: Se ejecuta SOLO si el bloque try concluyó con éxito total
-            self.__reservas.append(reserva_creada)
-            estado_transaccion = "EXITOSA_CONFIRMADA"
-            logger.info(
-                "Transacción EXITOSA (Bloque ELSE): Reserva '%s' registrada en memoria. Costo: $%.2f COP.",
-                reserva_creada.id_reserva,
-                reserva_creada.costo_total
-            )
+            # El bloque else solo se ejecuta si NO saltó ninguna excepción en el try
+            self.reservas.append(reserva)
+            estado_final = "CONFIRMADA_OK"
+            logger.info("Reserva '%s' guardada con éxito en la lista interna. Total: $%.2f", id_reserva, reserva.costo_total)
 
         finally:
-            # Bloque FINALLY: Garantiza la auditoría de cierre de transacción bajo cualquier resultado
-            logger.info(
-                "Cierre de Auditoría (Bloque FINALLY): Reserva '%s' -> Estado final: [%s]. Total reservas activas: %d.",
-                id_reserva,
-                estado_transaccion,
-                len(self.__reservas)
-            )
+            # El bloque finally siempre se ejecuta, garantizando el registro de auditoría
+            logger.info("Fin de transacción para reserva '%s' -> Resultado: [%s]", id_reserva, estado_final)
 
-        return reserva_creada
+        return reserva
 
     # -------------------------------------------------------------------------
     # Encadenamiento de Excepciones (raise ... from ...)
@@ -300,129 +181,86 @@ class SistemaGestionFJ:
         id_servicio: str,
         fecha_str: str,
         duracion_str: str
-    ) -> Optional[Reserva]:
-        """Procesa una reserva a partir de cadenas de texto no saneadas.
-
-        Aplica explícitamente el encadenamiento de excepciones con 'raise ... from err_origen'
-        para preservar la traza del error de origen (ValueError / TypeError) dentro
-        de la jerarquía de ReservaInvalidaException.
-        """
-        self.__contador_operaciones += 1
-        logger.info(
-            "[OP-%02d] Procesando datos externos para reserva '%s' con validación de tipos encadenada.",
-            self.__contador_operaciones, id_reserva
-        )
+    ):
+        """Procesa datos recibidos en texto con conversión explícita y encadenamiento de excepciones."""
+        logger.info("Procesando datos de texto para la reserva '%s'...", id_reserva)
 
         try:
-            # Intento de parseo de fecha con formato ISO o estándar
+            # Intentamos convertir la fecha desde texto
             try:
-                fecha_obj = datetime.strptime(fecha_str.strip(), "%Y-%m-%d %H:%M")
+                fecha_dt = datetime.strptime(fecha_str.strip(), "%Y-%m-%d %H:%M")
             except ValueError as err_fecha:
-                # Encadenamiento explícito de excepción de fecha
+                # Encadenamos la excepción: lanzamos una de negocio a partir del ValueError nativo
                 raise ReservaInvalidaException(
-                    f"Error de formato en fecha '{fecha_str}'. Se requiere estrictamente 'YYYY-MM-DD HH:MM'.",
-                    codigo_error="ERR_PARSEO_FECHA_ENCADENADA",
-                    detalles={"cadena_recibida": fecha_str}
+                    f"El formato de la fecha '{fecha_str}' es incorrecto. Debe ser AAAA-MM-DD HH:MM."
                 ) from err_fecha
 
-            # Intento de casteo numérico de duración
+            # Intentamos convertir la duración a número flotante
             try:
                 duracion_num = float(duracion_str)
             except (ValueError, TypeError) as err_num:
-                # Encadenamiento explícito de excepción de duración
+                # Encadenamos la excepción de duración
                 raise ReservaInvalidaException(
-                    f"El valor de duración '{duracion_str}' no es convertible a un valor numérico válido.",
-                    codigo_error="ERR_PARSEO_DURACION_ENCADENADA",
-                    detalles={"cadena_recibida": duracion_str}
+                    f"La duración '{duracion_str}' no es un número válido."
                 ) from err_num
 
-            # Delegación a la transacción en memoria
-            return self.crear_reserva_transaccional(
+            # Si las conversiones funcionaron, enviamos a la transacción
+            return self.crear_reserva(
                 id_reserva=id_reserva,
                 id_cliente=id_cliente,
                 id_servicio=id_servicio,
-                fecha_inicio=fecha_obj,
+                fecha_inicio=fecha_dt,
                 duracion=duracion_num
             )
 
         except ReservaInvalidaException as rie:
-            self.__contador_excepciones_controladas += 1
-            # Registrar explícitamente el encadenamiento hacia el log con traceback completo
+            # Registramos en el log la excepción y su causa original (__cause__)
             logger.error(
-                "Encadenamiento de excepción detectado en reserva '%s': %s (Causa original: %s)",
-                id_reserva,
-                rie.formatear_para_log(),
-                repr(rie.__cause__),
-                exc_info=True
+                "Excepción encadenada en reserva '%s': %s | Causa original: %s",
+                id_reserva, rie, repr(rie.__cause__), exc_info=True
             )
             return None
 
     # -------------------------------------------------------------------------
-    # Cancelación y Confirmación de Reservas
+    # Cancelación de Reservas
     # -------------------------------------------------------------------------
 
-    def cancelar_reserva(self, id_reserva: str, motivo: str = "Solicitado por cliente") -> bool:
-        """Cancela una reserva existente controlando OperacionNoPermitidaException."""
-        self.__contador_operaciones += 1
-        logger.info("[OP-%02d] Solicitando cancelación de reserva ID: '%s'", self.__contador_operaciones, id_reserva)
+    def cancelar_reserva(self, id_reserva: str, motivo: str = "Solicitud del cliente"):
+        """Cancela una reserva activa y gestiona las excepciones correspondientes."""
+        logger.info("Solicitando cancelación de reserva: %s", id_reserva)
 
         try:
             reserva = self.buscar_reserva(id_reserva)
             if reserva is None:
-                raise ReservaInvalidaException(
-                    f"No existe reserva registrada con el identificador '{id_reserva}'.",
-                    codigo_error="ERR_RESERVA_NO_ENCONTRADA"
-                )
+                raise ReservaInvalidaException(f"No se encontró la reserva '{id_reserva}'.")
 
+            # Intentamos cancelar
             reserva.cancelar(motivo=motivo)
-            logger.info("Reserva '%s' cancelada satisfactoriamente. Motivo: %s", id_reserva, motivo)
+            logger.info("Reserva '%s' cancelada correctamente. Motivo: %s", id_reserva, motivo)
             return True
 
-        except OperacionNoPermitidaException as onpe:
-            self.__contador_excepciones_controladas += 1
-            logger.warning(
-                "Intento de operación no permitida al cancelar reserva '%s': %s",
-                id_reserva,
-                onpe.formatear_para_log()
-            )
+        except OperacionNoPermitidaException as e:
+            logger.warning("No se pudo cancelar '%s': %s", id_reserva, e.mensaje)
             return False
-        except SoftwareFJException as sfje:
-            self.__contador_excepciones_controladas += 1
-            logger.warning("Fallo al cancelar reserva: %s", sfje.formatear_para_log())
+        except SoftwareFJException as e:
+            logger.warning("Fallo en la cancelación: %s", e.mensaje)
             return False
 
-    def buscar_reserva(self, id_reserva: str) -> Optional[Reserva]:
-        """Busca una reserva por su identificador en la lista interna."""
-        id_norm = str(id_reserva).strip()
-        for r in self.__reservas:
-            if r.id_reserva == id_norm:
+    def buscar_reserva(self, id_reserva: str):
+        """Busca una reserva por su ID en la lista interna."""
+        for r in self.reservas:
+            if r.id_reserva == id_reserva.strip():
                 return r
         return None
 
-    # -------------------------------------------------------------------------
-    # Métricas y Resumen del Sistema
-    # -------------------------------------------------------------------------
-
-    def obtener_metricas(self) -> Dict[str, Any]:
-        """Calcula el estado y resiliencia del sistema en memoria."""
-        reservas_por_estado = {
-            EstadoReserva.PENDIENTE.value: 0,
-            EstadoReserva.CONFIRMADA.value: 0,
-            EstadoReserva.CANCELADA.value: 0,
-        }
-        for r in self.__reservas:
-            reservas_por_estado[r.estado.value] += 1
-
-        total_ingresos = sum(r.costo_total for r in self.__reservas if r.estado == EstadoReserva.CONFIRMADA)
-
+    def resumen_sistema(self):
+        """Genera un resumen simple del estado actual en memoria."""
+        confirmadas = sum(1 for r in self.reservas if r.estado == EstadoReserva.CONFIRMADA)
+        canceladas = sum(1 for r in self.reservas if r.estado == EstadoReserva.CANCELADA)
         return {
-            "empresa": self.__nombre_empresa,
-            "total_clientes_en_memoria": len(self.__clientes),
-            "total_servicios_en_catalogo": len(self.__servicios),
-            "total_reservas": len(self.__reservas),
-            "reservas_por_estado": reservas_por_estado,
-            "total_ingresos_confirmados_cop": total_ingresos,
-            "operaciones_procesadas": self.__contador_operaciones,
-            "excepciones_controladas_sin_abortar": self.__contador_excepciones_controladas,
-            "estabilidad_sistema_pct": 100.0  # El sistema nunca aborta el hilo principal
+            "clientes": len(self.clientes),
+            "servicios": len(self.servicios),
+            "reservas_totales": len(self.reservas),
+            "confirmadas": confirmadas,
+            "canceladas": canceladas
         }

@@ -1,4 +1,4 @@
-"""Subpaquete de modelos de datos de Software FJ."""
+"""Modelos de datos del sistema Software FJ."""
 
 from software_fj.models.base import EntidadBase
 from software_fj.models.cliente import Cliente
@@ -7,7 +7,7 @@ from software_fj.models.servicios import (
     ReservaSala,
     AlquilerEquipo,
     AsesoriaEspecializada,
-    IVA_COLOMBIA,
+    TASA_IVA,
 )
 from software_fj.models.reserva import Reserva, EstadoReserva
 
@@ -18,7 +18,7 @@ __all__ = [
     "ReservaSala",
     "AlquilerEquipo",
     "AsesoriaEspecializada",
-    "IVA_COLOMBIA",
+    "TASA_IVA",
     "Reserva",
     "EstadoReserva",
 ]
